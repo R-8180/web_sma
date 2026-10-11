@@ -255,6 +255,6 @@ export const schoolDetails = {
     "Jl. Cemara Raya, Kelurahan Padangsari, Kecamatan Banyumanik, Kota Semarang, Jawa Tengah",
   phone: "(024) 7472812",
   fax: "(024) 7462790",
-  email: "smu092001@yahoo.com",
+  email: "sman09semarang@gmail.com",
   website: "http://www.sman9smg.sch.id",
 };

@@ -31,7 +31,7 @@ export default function Footer() {
             <ul className="space-y-3 text-sm leading-6 text-slate-600">
               <li>Jl. Cemara Raya, Banyumanik, Semarang</li>
               <li>(024) 7472812</li>
-              <li>smu092001@yahoo.com</li>
+              <li>sman09semarang@gmail.com</li>
             </ul>
           </div>
 
