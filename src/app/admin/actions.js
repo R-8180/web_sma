@@ -14,7 +14,7 @@ export async function signInAdmin(_previousState, formData) {
   if (!getSupabaseConfig()) {
     return {
       error:
-        "Login belum dikonfigurasi di server. Tambahkan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY di Environment Variables Vercel, lalu deploy ulang.",
+        "Login belum dikonfigurasi di server. Tambahkan SUPABASE_URL dan SUPABASE_ANON_KEY di Environment Variables Vercel, lalu deploy ulang.",
     };
   }
 

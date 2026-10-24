@@ -26,7 +26,7 @@ Konten situs dapat diedit melalui dashboard admin. Pengaturan halaman disimpan p
 ### Menyiapkan Supabase
 
 1. Buka **SQL Editor** pada project Supabase dan jalankan isi `supabase/migrations/202610240001_cms_setup.sql`. Migrasi ini membuat tabel konten dan bucket Storage publik `site-images`, dengan akses unggah/hapus dibatasi untuk akun admin.
-2. Salin `.env.example` menjadi `.env.local`, lalu isi `NEXT_PUBLIC_SUPABASE_ANON_KEY` dengan **anon/public/publishable key** dari pengaturan API project. URL project sudah disediakan di template.
+2. Salin `.env.example` menjadi `.env.local`, lalu isi `SUPABASE_ANON_KEY` dengan **anon/public/publishable key** dari pengaturan API project. `SUPABASE_URL` sudah disediakan di template.
 3. Buat akun admin melalui **Authentication → Users** di Supabase. Pada **app_metadata** akun tersebut, tetapkan:
 
    ```json
@@ -37,7 +37,7 @@ Konten situs dapat diedit melalui dashboard admin. Pengaturan halaman disimpan p
 4. Jalankan `npm run dev`, buka `/admin/login`, lalu masuk dengan email dan password akun admin.
 5. Klik **Inisialisasi konten awal** sekali untuk menyalin teks, profil sekolah, kontak, dan berita bawaan situs ke database. Proses ini tidak menimpa data yang sudah ada.
 
-Untuk deployment Vercel, tambahkan `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` pada **Project Settings → Environment Variables** untuk environment Production, lalu redeploy. Gunakan project URL dan anon/public/publishable key dari Supabase; jangan gunakan password database atau service-role key.
+Untuk deployment Vercel, tambahkan `SUPABASE_URL` dan `SUPABASE_ANON_KEY` pada **Project Settings → Environment Variables** untuk environment Production, pilih tipe **Sensitive/Secret** (tanpa prefix `NEXT_PUBLIC_`), lalu redeploy. Nilai hanya dipakai di server; gunakan project URL dan anon/public/publishable key dari Supabase, jangan gunakan password database atau service-role key.
 
 `.env.local` tidak boleh di-commit. Aplikasi hanya menggunakan URL project dan anon/publishable key yang dibatasi oleh Row Level Security; **password database tidak diperlukan dan jangan disimpan di kode atau file frontend**. Karena password database sempat dibagikan melalui chat, segera rotasi/reset password itu dari pengaturan database Supabase dan jangan gunakan kembali password yang sama.
 

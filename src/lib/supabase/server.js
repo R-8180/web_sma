@@ -7,7 +7,7 @@ export async function createSupabaseServerClient() {
   const config = getSupabaseConfig();
   if (!config) {
     throw new Error(
-      "Supabase belum dikonfigurasi. Salin .env.example ke .env.local dan isi NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+      "Supabase belum dikonfigurasi. Salin .env.example ke .env.local dan isi SUPABASE_URL serta SUPABASE_ANON_KEY.",
     );
   }
 
