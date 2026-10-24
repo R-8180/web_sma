@@ -61,6 +61,12 @@ img {
   }
 }
 
+@supports selector(:has(*)) {
+  .site-layout:has(.admin-dashboard-shell) > .site-chrome {
+    display: none;
+  }
+}
+
 .prose-lg p {
   margin-top: 1rem;
   line-height: 1.9;

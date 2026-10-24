@@ -8,7 +8,7 @@ export default async function Navbar() {
   const { brand, navigation } = await getSiteContent();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
+    <header className="site-chrome sticky top-0 z-50 border-b border-slate-200 bg-white">
       <div className="section-shell flex h-16 items-center justify-between gap-4">
         <Link href="/" className="flex shrink-0 items-center gap-2 leading-tight text-school-forest">
           <Image src={brand.logo} alt={`Logo ${brand.name}`} width={48} height={60} className="h-10 w-8 object-contain" />

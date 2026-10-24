@@ -19,7 +19,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" className={`${manrope.variable} h-full antialiased`}>
       <body className="min-h-full bg-background text-foreground">
-        <div className="min-h-screen">
+        <div className="site-layout min-h-screen">
           <Suspense fallback={<div className="h-16 border-b border-slate-200 bg-white" />}>
             <Navbar />
           </Suspense>

@@ -7,7 +7,7 @@ export default async function Footer() {
   const { brand, footer } = await getSiteContent();
 
   return (
-    <footer id="kontak" className="mt-16 border-t border-slate-200 bg-white text-slate-700">
+    <footer id="kontak" className="site-chrome mt-16 border-t border-slate-200 bg-white text-slate-700">
       <div className="section-shell py-12">
         <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-[1.4fr_0.9fr_1.2fr_0.7fr] lg:gap-10">
           <div>
