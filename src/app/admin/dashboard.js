@@ -359,10 +359,9 @@ function createNewsSlug(title) {
     .replace(/^-|-$/g, "");
 }
 
-function NewsEditor({ initialNews, startWithNewForm }) {
-  const [news, setNews] = useState(initialNews);
+function NewsEditor({ news, setNews, fullPage = false, onCreate, onCancel, onSaved }) {
   const [form, setForm] = useState(emptyNews);
-  const [editing, setEditing] = useState(startWithNewForm);
+  const [editing, setEditing] = useState(fullPage);
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -384,6 +383,7 @@ function NewsEditor({ initialNews, startWithNewForm }) {
         setNews((current) => [item, ...current.filter((existing) => existing.id !== item.id)]);
         setForm({ ...emptyNews, content: [""] });
         setEditing(false);
+        onSaved?.();
       }
     });
   }
@@ -397,12 +397,84 @@ function NewsEditor({ initialNews, startWithNewForm }) {
     });
   }
 
+  const editorForm = editing && (
+    <form onSubmit={submit} className={`space-y-4 rounded-xl border border-school-line bg-white p-5 ${fullPage ? "shadow-sm sm:p-8" : ""}`}>
+      <h2 className="text-xl font-bold text-school-ink">{form.id ? "Edit berita" : "Buat berita"}</h2>
+      {[
+        ["category", "Kategori"],
+        ["title", "Judul"],
+        ["date", "Tanggal tampilan"],
+        ["excerpt", "Ringkasan"],
+      ].map(([name, label]) => (
+        <label key={name} className="block text-sm font-semibold text-slate-700">
+          {label}
+          <input required value={form[name]} onChange={(event) => setForm({ ...form, [name]: event.target.value })} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 font-normal focus-visible:outline-2 focus-visible:outline-school-forest" />
+          {name === "title" && <span className="mt-1 block text-[11px] font-normal text-slate-400">{form.id ? `Alamat berita: /berita/${form.id}` : "Alamat berita akan dibuat otomatis dari judul."}</span>}
+        </label>
+      ))}
+      <div>
+        <FieldLabel>Foto berita (boleh dikosongkan)</FieldLabel>
+        <ImageUpload value={form.image} label="foto berita" onUploaded={(url) => setForm((current) => ({ ...current, image: url }))} onClear={() => setForm((current) => ({ ...current, image: "" }))} />
+        {!form.image && <p className="mt-2 text-[11px] text-slate-500">Jika tidak memilih gambar, foto sekolah akan digunakan otomatis.</p>}
+      </div>
+      <section className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <FieldLabel>Isi berita</FieldLabel>
+            <p className="mt-1 text-[11px] text-slate-400">Tulis isi berita dalam paragraf-paragraf.</p>
+          </div>
+          <button type="button" onClick={() => setForm((current) => ({ ...current, content: [...current.content, ""] }))} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 text-xs font-bold text-emerald-800 hover:bg-emerald-50">
+            <AdminIcon name="plus" className="h-3.5 w-3.5" />
+            Tambah paragraf
+          </button>
+        </div>
+        <div className="mt-3 space-y-3">
+          {form.content.map((paragraph, index) => (
+            <div key={`paragraph-${index}`} className="flex items-start gap-2">
+              <textarea
+                required
+                aria-label={`Paragraf ${index + 1}`}
+                placeholder={`Tulis paragraf ${index + 1}...`}
+                value={paragraph}
+                onChange={(event) => setForm((current) => ({ ...current, content: current.content.map((text, paragraphIndex) => paragraphIndex === index ? event.target.value : text) }))}
+                rows={4}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal leading-6 focus-visible:outline-2 focus-visible:outline-school-forest"
+              />
+              <button
+                type="button"
+                aria-label={`Hapus paragraf ${index + 1}`}
+                disabled={form.content.length === 1}
+                onClick={() => setForm((current) => ({ ...current, content: current.content.filter((_, paragraphIndex) => paragraphIndex !== index) }))}
+                className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-100 text-sm font-bold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+      <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <input type="checkbox" checked={form.published !== false} onChange={(event) => setForm({ ...form, published: event.target.checked })} />
+        Terbitkan berita
+      </label>
+      <div className="flex flex-wrap gap-3">
+        <button disabled={pending} className="rounded-lg bg-school-forest px-4 py-2 font-bold text-white disabled:opacity-50">{pending ? "Menyimpan..." : "Simpan berita"}</button>
+        <button type="button" onClick={() => fullPage ? onCancel?.() : setEditing(false)} className="rounded-lg border border-slate-300 px-4 py-2 font-semibold">Batal</button>
+        {message && <p role="status" className="self-center text-sm text-red-700">{message}</p>}
+      </div>
+    </form>
+  );
+
+  if (fullPage) {
+    return <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-8">{editorForm}</div>;
+  }
+
   return (
-    <div className="grid gap-8 xl:grid-cols-[0.8fr_1.2fr]">
+    <div className="grid gap-8">
       <section className="rounded-xl border border-school-line bg-white p-5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xl font-bold text-school-ink">Daftar berita ({news.length})</h2>
-          <button onClick={() => { setForm({ ...emptyNews }); setEditing(true); }} className="rounded-lg bg-school-forest px-3 py-2 text-sm font-bold text-white">Berita baru</button>
+          <button onClick={onCreate} className="rounded-lg bg-school-forest px-3 py-2 text-sm font-bold text-white">Tambahkan berita</button>
         </div>
         <ul className="mt-4 divide-y divide-slate-200">
           {news.map((item) => (
@@ -428,87 +500,22 @@ function NewsEditor({ initialNews, startWithNewForm }) {
         {!news.length && <p className="mt-4 text-sm text-slate-600">Belum ada berita. Gunakan tombol inisialisasi untuk menyalin konten awal.</p>}
       </section>
 
-      {editing && (
-        <form onSubmit={submit} className="space-y-4 rounded-xl border border-school-line bg-white p-5">
-          <h2 className="text-xl font-bold text-school-ink">{form.id ? "Edit berita" : "Buat berita"}</h2>
-          {[
-            ["category", "Kategori"],
-            ["title", "Judul"],
-            ["date", "Tanggal tampilan"],
-            ["excerpt", "Ringkasan"],
-          ].map(([name, label]) => (
-            <label key={name} className="block text-sm font-semibold text-slate-700">
-              {label}
-              <input required value={form[name]} onChange={(event) => setForm({ ...form, [name]: event.target.value })} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 font-normal focus-visible:outline-2 focus-visible:outline-school-forest" />
-              {name === "title" && <span className="mt-1 block text-[11px] font-normal text-slate-400">{form.id ? `Alamat berita: /berita/${form.id}` : "Alamat berita akan dibuat otomatis dari judul."}</span>}
-            </label>
-          ))}
-          <div>
-            <FieldLabel>Foto berita (boleh dikosongkan)</FieldLabel>
-            <ImageUpload value={form.image} label="foto berita" onUploaded={(url) => setForm((current) => ({ ...current, image: url }))} onClear={() => setForm((current) => ({ ...current, image: "" }))} />
-            {!form.image && <p className="mt-2 text-[11px] text-slate-500">Jika tidak memilih gambar, foto sekolah akan digunakan otomatis.</p>}
-          </div>
-          <section className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <FieldLabel>Isi berita</FieldLabel>
-                <p className="mt-1 text-[11px] text-slate-400">Tulis isi berita dalam paragraf-paragraf.</p>
-              </div>
-              <button type="button" onClick={() => setForm((current) => ({ ...current, content: [...current.content, ""] }))} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 text-xs font-bold text-emerald-800 hover:bg-emerald-50">
-                <AdminIcon name="plus" className="h-3.5 w-3.5" />
-                Tambah paragraf
-              </button>
-            </div>
-            <div className="mt-3 space-y-3">
-              {form.content.map((paragraph, index) => (
-                <div key={`paragraph-${index}`} className="flex items-start gap-2">
-                  <textarea
-                    required
-                    aria-label={`Paragraf ${index + 1}`}
-                    placeholder={`Tulis paragraf ${index + 1}...`}
-                    value={paragraph}
-                    onChange={(event) => setForm((current) => ({ ...current, content: current.content.map((text, paragraphIndex) => paragraphIndex === index ? event.target.value : text) }))}
-                    rows={4}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal leading-6 focus-visible:outline-2 focus-visible:outline-school-forest"
-                  />
-                  <button
-                    type="button"
-                    aria-label={`Hapus paragraf ${index + 1}`}
-                    disabled={form.content.length === 1}
-                    onClick={() => setForm((current) => ({ ...current, content: current.content.filter((_, paragraphIndex) => paragraphIndex !== index) }))}
-                    className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-100 text-sm font-bold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <input type="checkbox" checked={form.published !== false} onChange={(event) => setForm({ ...form, published: event.target.checked })} />
-            Terbitkan berita
-          </label>
-          <div className="flex gap-3">
-            <button disabled={pending} className="rounded-lg bg-school-forest px-4 py-2 font-bold text-white disabled:opacity-50">{pending ? "Menyimpan..." : "Simpan berita"}</button>
-            <button type="button" onClick={() => setEditing(false)} className="rounded-lg border border-slate-300 px-4 py-2 font-semibold">Batal</button>
-          </div>
-        </form>
-      )}
-      {message && <p role="status" className="text-sm text-slate-700 xl:col-span-2">{message}</p>}
+      {editorForm}
     </div>
   );
 }
 
 export default function AdminDashboard({ initialContent, initialNews }) {
   const [content, setContent] = useState(initialContent);
+  const [news, setNews] = useState(initialNews);
   const [section, setSection] = useState("overview");
-  const [startNewsForm, setStartNewsForm] = useState(false);
+  const [newsFormFullPage, setNewsFormFullPage] = useState(false);
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
   const [initializing, setInitializing] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const publishedCount = initialNews.filter((item) => item.published !== false).length;
-  const draftCount = initialNews.length - publishedCount;
+  const publishedCount = news.filter((item) => item.published !== false).length;
+  const draftCount = news.length - publishedCount;
   const currentTitle = section === "overview"
     ? "Ringkasan"
     : section === "news-editor"
@@ -534,16 +541,44 @@ export default function AdminDashboard({ initialContent, initialNews }) {
 
   function selectSection(key) {
     setSection(key);
-    setStartNewsForm(false);
+    setNewsFormFullPage(false);
     setMessage("");
     setMobileNavOpen(false);
   }
 
   function createNews() {
     setSection("news-editor");
-    setStartNewsForm(true);
+    setNewsFormFullPage(true);
     setMessage("");
     setMobileNavOpen(false);
+  }
+
+  if (newsFormFullPage) {
+    return (
+      <main className="admin-dashboard-shell min-h-screen bg-[#f5f7f5] text-slate-800">
+        <header className="border-b border-slate-200 bg-white px-4 py-5 sm:px-8">
+          <div className="mx-auto flex max-w-3xl items-center gap-4">
+            <button type="button" onClick={() => setNewsFormFullPage(false)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              Kembali ke berita
+            </button>
+            <div>
+              <p className="text-xs font-semibold text-slate-500">Panel pengelolaan / Berita & artikel</p>
+              <h1 className="mt-1 text-xl font-extrabold text-school-ink">Tambahkan berita</h1>
+            </div>
+          </div>
+        </header>
+        <NewsEditor
+          news={news}
+          setNews={setNews}
+          fullPage
+          onCancel={() => setNewsFormFullPage(false)}
+          onSaved={() => {
+            setNewsFormFullPage(false);
+            setSection("news-editor");
+          }}
+        />
+      </main>
+    );
   }
 
   return (
@@ -625,7 +660,7 @@ export default function AdminDashboard({ initialContent, initialNews }) {
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
             <button type="button" onClick={createNews} className="inline-flex min-h-9 items-center rounded-lg bg-school-forest px-3 text-xs font-bold text-white transition hover:bg-school-ink sm:text-sm">
-              Buat berita
+              Tambahkan berita
             </button>
             <span className="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-800 sm:inline-flex">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -718,7 +753,7 @@ export default function AdminDashboard({ initialContent, initialNews }) {
                     {[
                       ["home", "Edit konten beranda", "home"],
                       ["about", "Edit profil sekolah", "about"],
-                      ["news-editor", "Buat berita baru", "news"],
+                      ["news-editor", "Tambahkan berita baru", "news"],
                       ["footer", "Perbarui kontak sekolah", "contact"],
                     ].map(([key, label, icon]) => (
                       <button key={key} type="button" onClick={() => key === "news-editor" ? createNews() : selectSection(key)} className="group flex min-h-12 w-full items-center gap-3 rounded-lg border border-slate-100 px-3 text-left transition hover:border-emerald-100 hover:bg-emerald-50/50">
@@ -740,7 +775,7 @@ export default function AdminDashboard({ initialContent, initialNews }) {
               <div>
                 <p className="text-sm text-slate-500">Kelola artikel dan publikasi berita website sekolah.</p>
               </div>
-              <NewsEditor initialNews={initialNews} startWithNewForm={startNewsForm} />
+              <NewsEditor news={news} setNews={setNews} onCreate={createNews} />
             </div>
           ) : (
             <div className="max-w-5xl space-y-5">
