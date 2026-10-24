@@ -368,7 +368,11 @@ function NewsEditor({ initialNews }) {
 
   function submit(event) {
     event.preventDefault();
-    const item = { ...form, id: form.id || createNewsSlug(form.title) };
+    const item = {
+      ...form,
+      id: form.id || createNewsSlug(form.title),
+      image: form.image || "/sma9.jpg",
+    };
     if (!item.id) {
       setMessage("Judul berita harus berisi huruf atau angka.");
       return;
@@ -440,8 +444,9 @@ function NewsEditor({ initialNews }) {
             </label>
           ))}
           <div>
-            <FieldLabel>Foto berita</FieldLabel>
+            <FieldLabel>Foto berita (boleh dikosongkan)</FieldLabel>
             <ImageUpload value={form.image} label="foto berita" onUploaded={(url) => setForm((current) => ({ ...current, image: url }))} onClear={() => setForm((current) => ({ ...current, image: "" }))} />
+            {!form.image && <p className="mt-2 text-[11px] text-slate-500">Jika tidak memilih gambar, foto sekolah akan digunakan otomatis.</p>}
           </div>
           <section className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">

@@ -47,7 +47,7 @@ export async function saveSiteContent(content) {
 
 export async function saveNewsItem(item) {
   const { supabase } = await requireAdmin();
-  const fields = ["id", "category", "title", "date", "excerpt", "image"];
+  const fields = ["id", "category", "title", "date", "excerpt"];
   if (!item || fields.some((field) => typeof item[field] !== "string" || !item[field].trim())) {
     return { error: "Lengkapi semua kolom berita." };
   }
@@ -60,6 +60,7 @@ export async function saveNewsItem(item) {
 
   const { error } = await supabase.from("news").upsert({
     ...Object.fromEntries(fields.map((field) => [field, item[field].trim()])),
+    image: typeof item.image === "string" && item.image.trim() ? item.image.trim() : "/sma9.jpg",
     content: item.content.map((paragraph) => paragraph.trim()),
     published: Boolean(item.published),
   });
