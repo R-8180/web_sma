@@ -359,10 +359,10 @@ function createNewsSlug(title) {
     .replace(/^-|-$/g, "");
 }
 
-function NewsEditor({ initialNews }) {
+function NewsEditor({ initialNews, startWithNewForm }) {
   const [news, setNews] = useState(initialNews);
   const [form, setForm] = useState(emptyNews);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(startWithNewForm);
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -502,6 +502,7 @@ function NewsEditor({ initialNews }) {
 export default function AdminDashboard({ initialContent, initialNews }) {
   const [content, setContent] = useState(initialContent);
   const [section, setSection] = useState("overview");
+  const [startNewsForm, setStartNewsForm] = useState(false);
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
   const [initializing, setInitializing] = useState(false);
@@ -533,6 +534,14 @@ export default function AdminDashboard({ initialContent, initialNews }) {
 
   function selectSection(key) {
     setSection(key);
+    setStartNewsForm(false);
+    setMessage("");
+    setMobileNavOpen(false);
+  }
+
+  function createNews() {
+    setSection("news-editor");
+    setStartNewsForm(true);
     setMessage("");
     setMobileNavOpen(false);
   }
@@ -615,6 +624,9 @@ export default function AdminDashboard({ initialContent, initialNews }) {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+            <button type="button" onClick={createNews} className="inline-flex min-h-9 items-center rounded-lg bg-school-forest px-3 text-xs font-bold text-white transition hover:bg-school-ink sm:text-sm">
+              Buat berita
+            </button>
             <span className="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-800 sm:inline-flex">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               Mode pengelola
@@ -706,10 +718,10 @@ export default function AdminDashboard({ initialContent, initialNews }) {
                     {[
                       ["home", "Edit konten beranda", "home"],
                       ["about", "Edit profil sekolah", "about"],
-                      ["news-editor", "Tambah atau edit berita", "news"],
+                      ["news-editor", "Buat berita baru", "news"],
                       ["footer", "Perbarui kontak sekolah", "contact"],
                     ].map(([key, label, icon]) => (
-                      <button key={key} type="button" onClick={() => selectSection(key)} className="group flex min-h-12 w-full items-center gap-3 rounded-lg border border-slate-100 px-3 text-left transition hover:border-emerald-100 hover:bg-emerald-50/50">
+                      <button key={key} type="button" onClick={() => key === "news-editor" ? createNews() : selectSection(key)} className="group flex min-h-12 w-full items-center gap-3 rounded-lg border border-slate-100 px-3 text-left transition hover:border-emerald-100 hover:bg-emerald-50/50">
                         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-500 group-hover:bg-emerald-100 group-hover:text-emerald-800"><AdminIcon name={icon} className="h-4 w-4" /></span>
                         <span className="flex-1 text-xs font-bold text-slate-700">{label}</span>
                         <AdminIcon name="arrow" className="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-school-forest" />
@@ -728,7 +740,7 @@ export default function AdminDashboard({ initialContent, initialNews }) {
               <div>
                 <p className="text-sm text-slate-500">Kelola artikel dan publikasi berita website sekolah.</p>
               </div>
-              <NewsEditor initialNews={initialNews} />
+              <NewsEditor initialNews={initialNews} startWithNewForm={startNewsForm} />
             </div>
           ) : (
             <div className="max-w-5xl space-y-5">
