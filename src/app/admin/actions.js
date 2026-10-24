@@ -4,12 +4,19 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { defaultNewsItems, defaultSiteContent } from "../../lib/content-defaults";
 import { requireAdmin } from "../../lib/admin";
+import { getSupabaseConfig } from "../../lib/supabase/env";
 import { createSupabaseServerClient } from "../../lib/supabase/server";
 
 export async function signInAdmin(_previousState, formData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   if (!email || !password) return { error: "Email dan password harus diisi." };
+  if (!getSupabaseConfig()) {
+    return {
+      error:
+        "Login belum dikonfigurasi di server. Tambahkan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY di Environment Variables Vercel, lalu deploy ulang.",
+    };
+  }
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });

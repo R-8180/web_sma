@@ -37,6 +37,8 @@ Konten situs dapat diedit melalui dashboard admin. Pengaturan halaman disimpan p
 4. Jalankan `npm run dev`, buka `/admin/login`, lalu masuk dengan email dan password akun admin.
 5. Klik **Inisialisasi konten awal** sekali untuk menyalin teks, profil sekolah, kontak, dan berita bawaan situs ke database. Proses ini tidak menimpa data yang sudah ada.
 
+Untuk deployment Vercel, tambahkan `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` pada **Project Settings → Environment Variables** untuk environment Production, lalu redeploy. Gunakan project URL dan anon/public/publishable key dari Supabase; jangan gunakan password database atau service-role key.
+
 `.env.local` tidak boleh di-commit. Aplikasi hanya menggunakan URL project dan anon/publishable key yang dibatasi oleh Row Level Security; **password database tidak diperlukan dan jangan disimpan di kode atau file frontend**. Karena password database sempat dibagikan melalui chat, segera rotasi/reset password itu dari pengaturan database Supabase dan jangan gunakan kembali password yang sama.
 
 Dashboard menggunakan formulir visual untuk mengedit beranda, identitas/navigasi, profil, misi, halaman berita, kontak/footer, dan berita. Item seperti menu navigasi, data sekolah, misi, paragraf, dan tautan sosial dapat ditambah atau dihapus langsung melalui tombol. Untuk menyimpan foto di Supabase, pilih foto pada kolom gambar lalu tekan **Gunakan gambar ini**; foto diunggah ke bucket `site-images` dan tautannya disimpan bersama konten di database. Format yang diterima JPG, PNG, WEBP, atau GIF dengan ukuran maksimal 5 MB. Foto lama yang masih memakai alamat file lokal perlu diunggah ulang melalui dashboard agar berpindah ke Storage.
