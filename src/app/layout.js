@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Manrope } from "next/font/google";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
@@ -19,9 +20,13 @@ export default function RootLayout({ children }) {
     <html lang="id" className={`${manrope.variable} h-full antialiased`}>
       <body className="min-h-full bg-background text-foreground">
         <div className="min-h-screen">
-          <Navbar />
+          <Suspense fallback={<div className="h-16 border-b border-slate-200 bg-white" />}>
+            <Navbar />
+          </Suspense>
           {children}
-          <Footer />
+          <Suspense fallback={null}>
+            <Footer />
+          </Suspense>
         </div>
       </body>
     </html>

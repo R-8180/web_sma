@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { newsItems } from "../../../data";
+import { connection } from "next/server";
+import { getNewsItems, getSiteContent } from "../../../lib/site-content";
 
-export function generateStaticParams() {
-  return newsItems.map((item) => ({ id: item.id }));
-}
+export const instant = false;
 
 export async function generateMetadata({ params }) {
+  await connection();
   const { id } = await params;
+  const newsItems = await getNewsItems();
   const item = newsItems.find((news) => news.id === id);
 
   if (!item) {
@@ -23,7 +24,12 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function BeritaDetailPage({ params }) {
+  await connection();
   const { id } = await params;
+  const [newsItems, { news: pageContent }] = await Promise.all([
+    getNewsItems(),
+    getSiteContent(),
+  ]);
   const item = newsItems.find((news) => news.id === id);
 
   if (!item) {
@@ -34,7 +40,7 @@ export default async function BeritaDetailPage({ params }) {
     <main className="section-shell py-12 md:py-16">
       <div className="mb-6">
         <Link href="/berita" className="inline-flex items-center border-b border-school-forest pb-1 text-sm font-semibold text-school-forest">
-          ← Kembali ke berita
+          ← {pageContent.backLabel}
         </Link>
       </div>
 
@@ -55,7 +61,7 @@ export default async function BeritaDetailPage({ params }) {
             alt={`Ilustrasi berita kategori ${item.category.toLowerCase()}`}
             className="aspect-[16/9] w-full object-cover"
           />
-          <figcaption className="mt-2 text-xs text-slate-500">Foto ilustrasi.</figcaption>
+          <figcaption className="mt-2 text-xs text-slate-500">{pageContent.imageCaption}</figcaption>
         </figure>
 
         <div className="prose-lg mt-8 space-y-5 text-slate-700">
