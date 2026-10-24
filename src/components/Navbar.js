@@ -29,6 +29,12 @@ export default async function Navbar() {
             </Link>
           ))}
         </nav>
+        <Link
+          href="/admin/login"
+          className="inline-flex min-h-10 shrink-0 items-center rounded-md bg-school-forest px-2.5 text-[11px] font-bold text-white transition-colors hover:bg-school-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-school-forest sm:px-3 sm:text-sm"
+        >
+          Login Admin
+        </Link>
       </div>
     </header>
   );

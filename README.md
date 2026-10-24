@@ -25,7 +25,7 @@ Konten situs dapat diedit melalui dashboard admin. Pengaturan halaman disimpan p
 
 ### Menyiapkan Supabase
 
-1. Buka **SQL Editor** pada project Supabase dan jalankan isi `supabase/migrations/202610240001_cms_setup.sql`.
+1. Buka **SQL Editor** pada project Supabase dan jalankan isi `supabase/migrations/202610240001_cms_setup.sql`. Migrasi ini membuat tabel konten dan bucket Storage publik `site-images`, dengan akses unggah/hapus dibatasi untuk akun admin.
 2. Salin `.env.example` menjadi `.env.local`, lalu isi `NEXT_PUBLIC_SUPABASE_ANON_KEY` dengan **anon/public/publishable key** dari pengaturan API project. URL project sudah disediakan di template.
 3. Buat akun admin melalui **Authentication → Users** di Supabase. Pada **app_metadata** akun tersebut, tetapkan:
 
@@ -39,7 +39,9 @@ Konten situs dapat diedit melalui dashboard admin. Pengaturan halaman disimpan p
 
 `.env.local` tidak boleh di-commit. Aplikasi hanya menggunakan URL project dan anon/publishable key yang dibatasi oleh Row Level Security; **password database tidak diperlukan dan jangan disimpan di kode atau file frontend**. Karena password database sempat dibagikan melalui chat, segera rotasi/reset password itu dari pengaturan database Supabase dan jangan gunakan kembali password yang sama.
 
-Dashboard menggunakan formulir visual untuk mengedit beranda, identitas/navigasi, profil, misi, halaman berita, kontak/footer, dan berita. Item seperti menu navigasi, data sekolah, misi, paragraf, dan tautan sosial dapat ditambah atau dihapus langsung melalui tombol. Gambar memiliki pratinjau sebelum dipasang dan dapat diunggah ke Storage (JPG, PNG, WEBP, atau GIF; maksimal 5 MB), tanpa perlu menyalin URL atau mengedit JSON.
+Dashboard menggunakan formulir visual untuk mengedit beranda, identitas/navigasi, profil, misi, halaman berita, kontak/footer, dan berita. Item seperti menu navigasi, data sekolah, misi, paragraf, dan tautan sosial dapat ditambah atau dihapus langsung melalui tombol. Untuk menyimpan foto di Supabase, pilih foto pada kolom gambar lalu tekan **Gunakan gambar ini**; foto diunggah ke bucket `site-images` dan tautannya disimpan bersama konten di database. Format yang diterima JPG, PNG, WEBP, atau GIF dengan ukuran maksimal 5 MB. Foto lama yang masih memakai alamat file lokal perlu diunggah ulang melalui dashboard agar berpindah ke Storage.
+
+Tautan **Login Admin** tersedia pada navigasi website dan membuka `/admin/login`.
 
 Jika kredensial Supabase belum dikonfigurasi, situs menampilkan konten awal lokal. Dashboard dan penyimpanan Supabase baru berfungsi setelah langkah konfigurasi di atas selesai.
 
