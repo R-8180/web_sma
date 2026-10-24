@@ -39,7 +39,7 @@ Konten situs dapat diedit melalui dashboard admin. Pengaturan halaman disimpan p
 
 `.env.local` tidak boleh di-commit. Aplikasi hanya menggunakan URL project dan anon/publishable key yang dibatasi oleh Row Level Security; **password database tidak diperlukan dan jangan disimpan di kode atau file frontend**. Karena password database sempat dibagikan melalui chat, segera rotasi/reset password itu dari pengaturan database Supabase dan jangan gunakan kembali password yang sama.
 
-Dashboard menyediakan pengeditan data beranda, identitas/navigasi, profil, misi, halaman berita, kontak/footer, serta CRUD berita dan upload gambar (maksimal 5 MB). Array objek seperti menu navigasi, detail identitas, misi, dan tautan sosial diedit sebagai JSON di dashboard.
+Dashboard menggunakan formulir visual untuk mengedit beranda, identitas/navigasi, profil, misi, halaman berita, kontak/footer, dan berita. Item seperti menu navigasi, data sekolah, misi, paragraf, dan tautan sosial dapat ditambah atau dihapus langsung melalui tombol. Gambar memiliki pratinjau sebelum dipasang dan dapat diunggah ke Storage (JPG, PNG, WEBP, atau GIF; maksimal 5 MB), tanpa perlu menyalin URL atau mengedit JSON.
 
 Jika kredensial Supabase belum dikonfigurasi, situs menampilkan konten awal lokal. Dashboard dan penyimpanan Supabase baru berfungsi setelah langkah konfigurasi di atas selesai.
 

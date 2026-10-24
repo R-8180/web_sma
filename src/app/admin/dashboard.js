@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { deleteNewsItem, initializeContent, saveNewsItem, saveSiteContent, signOutAdmin, uploadImage } from "./actions";
 
 const sectionLabels = {
@@ -67,75 +67,212 @@ function updatePath(value, path, nextValue) {
   return copy;
 }
 
-function ContentFields({ value, path, onChange, onValidityChange }) {
-  return Object.entries(value).map(([key, child]) => {
-    const fieldPath = [...path, key];
-    const label = key.replace(/([A-Z])/g, " $1").replace(/^./, (letter) => letter.toUpperCase());
-    if (typeof child === "string") {
-      const isLong = child.length > 100;
-      const control = isLong
-        ? <textarea rows={Math.min(10, Math.max(3, Math.ceil(child.length / 100)))} value={child} onChange={(event) => onChange(fieldPath, event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal leading-6 focus-visible:outline-2 focus-visible:outline-school-forest" />
-        : <input value={child} onChange={(event) => onChange(fieldPath, event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm font-normal focus-visible:outline-2 focus-visible:outline-school-forest" />;
-      return (
-        <label key={fieldPath.join(".")} className="block text-sm font-semibold text-slate-700">
-          {label}
-          {control}
-          {/(image|logo)$/i.test(key) && <ImageUpload onUploaded={(url) => onChange(fieldPath, url)} />}
-        </label>
-      );
-    }
-    if (Array.isArray(child) && child.every((item) => typeof item === "string")) {
-      return (
-        <label key={fieldPath.join(".")} className="block text-sm font-semibold text-slate-700">
-          {label} <span className="font-normal text-slate-500">(satu item per baris)</span>
-          <textarea value={child.join("\n")} onChange={(event) => onChange(fieldPath, event.target.value.split("\n"))} rows={Math.min(14, Math.max(3, child.length))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal leading-6 focus-visible:outline-2 focus-visible:outline-school-forest" />
-        </label>
-      );
-    }
-    if (Array.isArray(child) || (child && typeof child === "object")) {
-      return (
-        <JsonField
-          key={fieldPath.join(".")}
-          label={label}
-          value={child}
-          onChange={(nextValue) => onChange(fieldPath, nextValue)}
-          onValidityChange={(isValid) => onValidityChange(fieldPath.join("."), isValid)}
-        />
-      );
-    }
-    return null;
-  });
+function displayLabel(key) {
+  const labels = {
+    address: "Alamat sekolah",
+    allNewsLabel: "Teks tombol semua berita",
+    copyright: "Teks hak cipta",
+    description: "Deskripsi",
+    email: "Email",
+    heroDescription: "Deskripsi utama",
+    heroEyebrow: "Teks kecil di atas judul",
+    heroImage: "Foto utama beranda",
+    heroImageAlt: "Deskripsi foto utama",
+    heroTitle: "Judul utama",
+    historyParagraphs: "Cerita sejarah sekolah",
+    image: "Foto",
+    imageAlt: "Deskripsi foto",
+    imageCaption: "Keterangan foto",
+    introduction: "Perkenalan sekolah",
+    label: "Nama yang ditampilkan",
+    locationLabel: "Nama lokasi",
+    logo: "Logo sekolah",
+    mapButtonLabel: "Teks tombol peta",
+    mapEmbedUrl: "Peta lokasi",
+    mapLinkUrl: "Tautan Google Maps",
+    missionItems: "Butir misi",
+    name: "Nama",
+    npsn: "NPSN",
+    phone: "Nomor telepon",
+    profileDescription: "Deskripsi profil",
+    profileEyebrow: "Teks kecil profil",
+    profileLinkLabel: "Teks tautan profil",
+    profileTitle: "Judul profil",
+    schoolDetails: "Data sekolah",
+    shortName: "Nama singkat sekolah",
+    socialLinks: "Tautan media sosial",
+    title: "Judul",
+    vision: "Visi sekolah",
+    welcomeImage: "Foto sambutan kepala sekolah",
+    welcomeLabel: "Teks kecil sambutan",
+    welcomeParagraphs: "Isi sambutan",
+    welcomeTitle: "Pembuka sambutan",
+    website: "Tautan website",
+  };
+  return labels[key] ?? key.replace(/([A-Z])/g, " $1").replace(/^./, (letter) => letter.toUpperCase());
 }
 
-function JsonField({ label, value, onChange, onValidityChange }) {
-  const [text, setText] = useState(JSON.stringify(value, null, 2));
-  const [error, setError] = useState("");
+function createEmptyValue(value) {
+  if (Array.isArray(value)) return value.length ? [createEmptyValue(value[0])] : [""];
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, createEmptyValue(child)]));
+  }
+  if (typeof value === "boolean") return false;
+  if (typeof value === "number") return 0;
+  return "";
+}
 
-  function updateText(nextText) {
-    setText(nextText);
-    try {
-      onChange(JSON.parse(nextText));
-      setError("");
-      onValidityChange(true);
-    } catch {
-      setError("JSON belum valid; perbaiki format sebelum menyimpan.");
-      onValidityChange(false);
-    }
+function FieldLabel({ children }) {
+  return <span className="block text-xs font-bold text-slate-700">{children}</span>;
+}
+
+function ContentFields({ value, path, onChange }) {
+  if (Array.isArray(value)) {
+    const stringItems = value.every((item) => typeof item === "string");
+    return (
+      <section className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-extrabold text-slate-800">{displayLabel(path.at(-1))}</h3>
+            <p className="mt-1 text-[11px] text-slate-400">{stringItems ? "Tambah, ubah, atau hapus teks satu per satu." : "Atur setiap item dengan formulir di bawah."}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onChange(path, [...value, stringItems ? "" : createEmptyValue(value[0] ?? {})])}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 text-xs font-bold text-emerald-800 transition hover:bg-emerald-50"
+          >
+            <AdminIcon name="plus" className="h-3.5 w-3.5" />
+            Tambah item
+          </button>
+        </div>
+
+        {value.length ? (
+          <div className="mt-4 space-y-3">
+            {value.map((item, index) => (
+              <div key={`${path.join(".")}-${index}`} className="rounded-lg border border-slate-200 bg-white p-3 sm:p-4">
+                {stringItems ? (
+                  <div className="flex items-start gap-3">
+                    {item.length > 100 ? (
+                      <textarea
+                        aria-label={`${displayLabel(path.at(-1))}, item ${index + 1}`}
+                        rows={Math.min(8, Math.max(3, Math.ceil(item.length / 100)))}
+                        value={item}
+                        onChange={(event) => onChange([...path, index], event.target.value)}
+                        className="min-h-11 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-normal leading-6 focus-visible:outline-2 focus-visible:outline-school-forest"
+                      />
+                    ) : (
+                      <input
+                        aria-label={`${displayLabel(path.at(-1))}, item ${index + 1}`}
+                        value={item}
+                        onChange={(event) => onChange([...path, index], event.target.value)}
+                        placeholder={`Tulis ${displayLabel(path.at(-1)).toLowerCase()}...`}
+                        className="min-h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-normal focus-visible:outline-2 focus-visible:outline-school-forest"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      aria-label={`Hapus item ${index + 1}`}
+                      onClick={() => onChange(path, value.filter((_, itemIndex) => itemIndex !== index))}
+                      className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-100 text-sm font-bold text-red-600 hover:bg-red-50"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1 space-y-4">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Item {index + 1}</p>
+                      <ContentFields value={item} path={[...path, index]} onChange={onChange} />
+                    </div>
+                    <button
+                      type="button"
+                      aria-label={`Hapus ${displayLabel(path.at(-1))} ${index + 1}`}
+                      onClick={() => onChange(path, value.filter((_, itemIndex) => itemIndex !== index))}
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-100 text-sm font-bold text-red-600 hover:bg-red-50"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-xs text-slate-400">
+            Belum ada item. Tekan “Tambah item” untuk mulai mengisi.
+          </div>
+        )}
+      </section>
+    );
   }
 
+  if (value && typeof value === "object") {
+    return (
+      <div className="min-w-0 space-y-5">
+        {Object.entries(value).map(([key, child]) => (
+          <div key={[...path, key].join(".")} className="min-w-0">
+            <ContentFields value={child} path={[...path, key]} onChange={onChange} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const key = path.at(-1);
+  const label = displayLabel(key);
+  const isImage = /(image|logo)$/i.test(key);
+
+  if (isImage) {
+    return (
+      <div className="min-w-0">
+        <FieldLabel>{label}</FieldLabel>
+        <ImageUpload value={value} label={label} onUploaded={(url) => onChange(path, url)} onClear={() => onChange(path, "")} />
+      </div>
+    );
+  }
+
+  if (typeof value === "boolean") {
+    return (
+      <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700">
+        <input type="checkbox" checked={value} onChange={(event) => onChange(path, event.target.checked)} className="h-4 w-4 accent-school-forest" />
+        {label}
+      </label>
+    );
+  }
+
+  const isLong = typeof value === "string" && value.length > 100;
   return (
-    <label className="block text-sm font-semibold text-slate-700">
-      {label} <span className="font-normal text-slate-500">(format JSON)</span>
-      <textarea value={text} onChange={(event) => updateText(event.target.value)} rows={Math.min(18, Math.max(4, text.split("\n").length))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs leading-5 focus-visible:outline-2 focus-visible:outline-school-forest" />
-      {error && <span role="alert" className="mt-1 block text-xs text-red-700">{error}</span>}
+    <label className="block min-w-0">
+      <FieldLabel>{label}</FieldLabel>
+      {isLong ? (
+        <textarea
+          rows={Math.min(10, Math.max(3, Math.ceil(value.length / 100)))}
+          value={value}
+          onChange={(event) => onChange(path, event.target.value)}
+          className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-normal leading-6 focus-visible:outline-2 focus-visible:outline-school-forest"
+        />
+      ) : (
+        <input
+          type={typeof value === "number" ? "number" : "text"}
+          value={value}
+          onChange={(event) => onChange(path, typeof value === "number" ? Number(event.target.value) : event.target.value)}
+          className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-normal focus-visible:outline-2 focus-visible:outline-school-forest"
+        />
+      )}
     </label>
   );
 }
 
-function ImageUpload({ onUploaded }) {
+function ImageUpload({ value, label, onUploaded, onClear }) {
   const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState("");
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
+  const inputRef = useRef(null);
+
+  useEffect(() => () => {
+    if (preview.startsWith("blob:")) URL.revokeObjectURL(preview);
+  }, [preview]);
 
   function handleUpload() {
     if (!file) {
@@ -145,27 +282,82 @@ function ImageUpload({ onUploaded }) {
     const formData = new FormData();
     formData.set("file", file);
     startTransition(async () => {
-      const result = await uploadImage(formData);
-      if (result.error) setMessage(result.error);
-      else {
-        onUploaded(result.url);
-        setMessage("Gambar berhasil diunggah.");
+      try {
+        const result = await uploadImage(formData);
+        if (result.error) setMessage(result.error);
+        else {
+          onUploaded(result.url);
+          setFile(null);
+          setPreview("");
+          if (inputRef.current) inputRef.current.value = "";
+          setMessage("Gambar berhasil dipasang.");
+        }
+      } catch (error) {
+        setMessage(`Gambar gagal diunggah: ${error.message}`);
       }
     });
   }
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2">
-      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => setFile(event.target.files?.[0] ?? null)} className="max-w-full text-xs font-normal" />
-      <button type="button" onClick={handleUpload} disabled={pending} className="rounded-md border border-school-forest px-3 py-1.5 text-xs font-bold text-school-forest disabled:opacity-50">
-        {pending ? "Mengunggah..." : "Unggah gambar"}
-      </button>
-      {message && <span role="status" className="text-xs font-normal text-slate-600">{message}</span>}
+    <div className="mt-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3">
+      {preview || value ? (
+        <div
+          role="img"
+          aria-label={`Pratinjau ${label}`}
+          className="h-40 w-full rounded-lg border border-slate-200 bg-white bg-contain bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${JSON.stringify(preview || value)})` }}
+        />
+      ) : (
+        <div className="flex h-28 flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-slate-400">
+          <AdminIcon name="page" className="h-7 w-7" />
+          <p className="mt-2 text-[11px]">Belum ada gambar dipilih</p>
+        </div>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <label className="inline-flex min-h-9 cursor-pointer items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50">
+          Pilih gambar
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={(event) => {
+              const selectedFile = event.target.files?.[0] ?? null;
+              setFile(selectedFile);
+              setPreview(selectedFile ? URL.createObjectURL(selectedFile) : "");
+              setMessage("");
+            }}
+            className="sr-only"
+          />
+        </label>
+        {file && (
+          <button type="button" onClick={handleUpload} disabled={pending} className="min-h-9 rounded-lg bg-school-forest px-3 text-xs font-bold text-white hover:bg-school-ink disabled:opacity-50">
+            {pending ? "Mengunggah..." : "Gunakan gambar ini"}
+          </button>
+        )}
+        {value && (
+          <button type="button" onClick={() => { setFile(null); if (inputRef.current) inputRef.current.value = ""; onClear(); setMessage(""); }} className="min-h-9 rounded-lg px-3 text-xs font-bold text-red-600 hover:bg-red-50">
+            Hapus gambar
+          </button>
+        )}
+      </div>
+      <p className="mt-2 text-[10px] leading-4 text-slate-400">Format JPG, PNG, WEBP, atau GIF. Ukuran maksimal 5 MB.</p>
+      {file && <p className="mt-1 text-[11px] font-medium text-slate-600">Dipilih: {file.name}</p>}
+      {message && <p role="status" className={`mt-2 text-xs ${message.includes("gagal") || message.includes("Gagal") ? "text-red-700" : "text-emerald-700"}`}>{message}</p>}
     </div>
   );
 }
 
 const emptyNews = { id: "", category: "", title: "", date: "", excerpt: "", image: "", content: [""], published: true };
+
+function createNewsSlug(title) {
+  return title
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
 function NewsEditor({ initialNews }) {
   const [news, setNews] = useState(initialNews);
@@ -176,12 +368,17 @@ function NewsEditor({ initialNews }) {
 
   function submit(event) {
     event.preventDefault();
+    const item = { ...form, id: form.id || createNewsSlug(form.title) };
+    if (!item.id) {
+      setMessage("Judul berita harus berisi huruf atau angka.");
+      return;
+    }
     startTransition(async () => {
-      const result = await saveNewsItem(form);
+      const result = await saveNewsItem(item);
       setMessage(result.error ?? result.success);
       if (result.success) {
-        setNews((current) => [form, ...current.filter((item) => item.id !== form.id)]);
-        setForm(emptyNews);
+        setNews((current) => [item, ...current.filter((existing) => existing.id !== item.id)]);
+        setForm({ ...emptyNews, content: [""] });
         setEditing(false);
       }
     });
@@ -206,9 +403,16 @@ function NewsEditor({ initialNews }) {
         <ul className="mt-4 divide-y divide-slate-200">
           {news.map((item) => (
             <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-              <div>
-                <p className="font-semibold text-slate-800">{item.title}</p>
-                <p className="mt-1 text-xs text-slate-500">{item.category} · {item.id} · {item.published === false ? "Draf" : "Terbit"}</p>
+              <div className="flex min-w-0 items-center gap-3">
+                {item.image ? (
+                  <div role="img" aria-label={`Foto ${item.title}`} className="h-12 w-16 shrink-0 rounded-md border border-slate-200 bg-slate-50 bg-cover bg-center" style={{ backgroundImage: `url(${JSON.stringify(item.image)})` }} />
+                ) : (
+                  <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-400"><AdminIcon name="news" className="h-5 w-5" /></div>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-800">{item.title}</p>
+                  <p className="mt-1 truncate text-xs text-slate-500">{item.category} · {item.date} · {item.published === false ? "Draf" : "Terbit"}</p>
+                </div>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { setForm({ ...item, content: [...item.content] }); setEditing(true); }} className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold">Edit</button>
@@ -224,23 +428,57 @@ function NewsEditor({ initialNews }) {
         <form onSubmit={submit} className="space-y-4 rounded-xl border border-school-line bg-white p-5">
           <h2 className="text-xl font-bold text-school-ink">{form.id ? "Edit berita" : "Buat berita"}</h2>
           {[
-            ["id", "Slug (huruf kecil dan tanda hubung)"],
             ["category", "Kategori"],
             ["title", "Judul"],
             ["date", "Tanggal tampilan"],
             ["excerpt", "Ringkasan"],
-            ["image", "URL gambar"],
           ].map(([name, label]) => (
             <label key={name} className="block text-sm font-semibold text-slate-700">
               {label}
               <input required value={form[name]} onChange={(event) => setForm({ ...form, [name]: event.target.value })} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 font-normal focus-visible:outline-2 focus-visible:outline-school-forest" />
-              {name === "image" && <ImageUpload onUploaded={(url) => setForm({ ...form, image: url })} />}
+              {name === "title" && <span className="mt-1 block text-[11px] font-normal text-slate-400">{form.id ? `Alamat berita: /berita/${form.id}` : "Alamat berita akan dibuat otomatis dari judul."}</span>}
             </label>
           ))}
-          <label className="block text-sm font-semibold text-slate-700">
-            Isi berita <span className="font-normal text-slate-500">(satu paragraf per baris)</span>
-            <textarea required value={form.content.join("\n")} onChange={(event) => setForm({ ...form, content: event.target.value.split("\n") })} rows={8} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal leading-6 focus-visible:outline-2 focus-visible:outline-school-forest" />
-          </label>
+          <div>
+            <FieldLabel>Foto berita</FieldLabel>
+            <ImageUpload value={form.image} label="foto berita" onUploaded={(url) => setForm((current) => ({ ...current, image: url }))} onClear={() => setForm((current) => ({ ...current, image: "" }))} />
+          </div>
+          <section className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <FieldLabel>Isi berita</FieldLabel>
+                <p className="mt-1 text-[11px] text-slate-400">Tulis isi berita dalam paragraf-paragraf.</p>
+              </div>
+              <button type="button" onClick={() => setForm((current) => ({ ...current, content: [...current.content, ""] }))} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 text-xs font-bold text-emerald-800 hover:bg-emerald-50">
+                <AdminIcon name="plus" className="h-3.5 w-3.5" />
+                Tambah paragraf
+              </button>
+            </div>
+            <div className="mt-3 space-y-3">
+              {form.content.map((paragraph, index) => (
+                <div key={`paragraph-${index}`} className="flex items-start gap-2">
+                  <textarea
+                    required
+                    aria-label={`Paragraf ${index + 1}`}
+                    placeholder={`Tulis paragraf ${index + 1}...`}
+                    value={paragraph}
+                    onChange={(event) => setForm((current) => ({ ...current, content: current.content.map((text, paragraphIndex) => paragraphIndex === index ? event.target.value : text) }))}
+                    rows={4}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal leading-6 focus-visible:outline-2 focus-visible:outline-school-forest"
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Hapus paragraf ${index + 1}`}
+                    disabled={form.content.length === 1}
+                    onClick={() => setForm((current) => ({ ...current, content: current.content.filter((_, paragraphIndex) => paragraphIndex !== index) }))}
+                    className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-100 text-sm font-bold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
           <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
             <input type="checkbox" checked={form.published !== false} onChange={(event) => setForm({ ...form, published: event.target.checked })} />
             Terbitkan berita
@@ -262,9 +500,7 @@ export default function AdminDashboard({ initialContent, initialNews }) {
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
   const [initializing, setInitializing] = useState(false);
-  const [invalidJsonFields, setInvalidJsonFields] = useState({});
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const hasInvalidJson = Object.values(invalidJsonFields).some(Boolean);
   const publishedCount = initialNews.filter((item) => item.published !== false).length;
   const draftCount = initialNews.length - publishedCount;
   const currentTitle = section === "overview"
@@ -306,7 +542,7 @@ export default function AdminDashboard({ initialContent, initialNews }) {
           className="fixed inset-0 z-40 bg-slate-950/45 lg:hidden"
         />
       )}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-[272px] flex-col bg-[#17352b] text-white shadow-2xl transition-transform duration-200 lg:static lg:z-auto lg:shrink-0 lg:translate-x-0 lg:shadow-none ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-[272px] flex-col bg-[#17352b] text-white shadow-2xl transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:shadow-none ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-[76px] items-center justify-between border-b border-white/10 px-6">
           <button type="button" onClick={() => selectSection("overview")} className="flex items-center gap-3 text-left">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-sm font-black tracking-wide">S9</span>
@@ -329,7 +565,6 @@ export default function AdminDashboard({ initialContent, initialNews }) {
                   <button
                     key={item.key}
                     type="button"
-                    disabled={hasInvalidJson}
                     onClick={() => selectSection(item.key)}
                     aria-current={section === item.key ? "page" : undefined}
                     className={`flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-[13px] font-medium transition-colors disabled:opacity-50 ${section === item.key ? "bg-[#d9eddf] font-bold text-[#17352b] shadow-sm" : "text-white/75 hover:bg-white/8 hover:text-white"}`}
@@ -505,11 +740,10 @@ export default function AdminDashboard({ initialContent, initialNews }) {
                     value={content[section]}
                     path={[section]}
                     onChange={(path, value) => setContent((current) => updatePath(current, path, value))}
-                    onValidityChange={(path, valid) => setInvalidJsonFields((current) => ({ ...current, [path]: !valid }))}
                   />
                 </div>
                 <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 bg-slate-50/70 px-5 py-4 sm:px-7">
-                  <button onClick={save} disabled={pending || hasInvalidJson} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-school-forest px-4 text-sm font-bold text-white shadow-sm transition hover:bg-school-ink disabled:cursor-not-allowed disabled:opacity-50">
+                  <button onClick={save} disabled={pending} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-school-forest px-4 text-sm font-bold text-white shadow-sm transition hover:bg-school-ink disabled:cursor-not-allowed disabled:opacity-50">
                     <AdminIcon name="check" className="h-4 w-4" />
                     {pending ? "Menyimpan..." : "Simpan perubahan"}
                   </button>
